@@ -1,0 +1,181 @@
+import java.util.*;
+
+public class QuizManagementSystem {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Aggregation: Participants created independently
+        Participant p1 = new Participant("Alice", "alice@example.com");
+        Participant p2 = new Participant("Bob", "bob@example.com");
+
+        while (true) {
+            System.out.println("\nChoose the type of quiz you want to take:");
+            System.out.println("1. Timed Quiz");
+            System.out.println("2. Practice Quiz");
+            int choice = scanner.nextInt();
+            scanner.nextLine();
+
+            Quiz quiz;
+
+            if (choice == 1) {
+                quiz = new TimedQuiz(60);
+                quiz.quizTitle = "Java Timed Quiz";
+                quiz.quizId = 101;
+            } else {
+                quiz = new PracticeQuiz();
+                quiz.quizTitle = "Java Practice Quiz";
+                quiz.quizId = 102;
+            }
+
+            // Composition: Questions created inside quiz logic
+            quiz.addQuestion(new Question("What is JVM?",
+                    Arrays.asList("Java Virtual Machine", "Java Volume Machine", "Just Very Mean"),
+                    "Java Virtual Machine"));
+
+            quiz.addQuestion(new Question("Which keyword is used to inherit a class in Java?",
+                    Arrays.asList("this", "super", "extends"),
+                    "extends"));
+
+            // Aggregation: Participant added externally
+            System.out.println("Choose participant: 1. Alice  2. Bob");
+            int userChoice = scanner.nextInt();
+            scanner.nextLine();
+
+            if (userChoice == 1) {
+                quiz.addParticipant(p1);
+            } else {
+                quiz.addParticipant(p2);
+            }
+
+            quiz.quizDetails();
+
+            if (quiz instanceof TimedQuiz) {
+                ((TimedQuiz) quiz).startTimer();
+            } else if (quiz instanceof PracticeQuiz) {
+                ((PracticeQuiz) quiz).reviewAnswers();
+            }
+
+            System.out.println("\nDo you want to attempt another quiz? (yes/no): ");
+            String again = scanner.nextLine();
+            if (!again.equalsIgnoreCase("yes")) {
+                break;
+            }
+        }
+
+        System.out.println("\nThank you for participating in the quiz!");
+    }
+}
+
+class Participant {
+    String name;
+    String email;
+    double score;
+
+    public Participant(String name, String email) {
+        this.name = name;
+        this.email = email;
+        this.score = 0.0;
+    }
+
+    public void participantDetails() {
+        System.out.println("Name: " + name);
+        System.out.println("Email: " + email);
+        System.out.println("Score: " + score);
+    }
+}
+
+class Question {
+    String questionText;
+    List<String> options;
+    String correctOption;
+
+    public Question(String questionText, List<String> options, String correctOption) {
+        this.questionText = questionText;
+        this.options = options;
+        this.correctOption = correctOption;
+    }
+
+    public boolean checkAnswer(String ans) {
+        return correctOption.equalsIgnoreCase(ans);
+    }
+
+    public void questionDetails() {
+        System.out.println("Question: " + questionText);
+        for (String option : options) {
+            System.out.println("Option: " + option);
+        }
+    }
+}
+
+class Quiz {
+    String quizTitle;
+    int quizId;
+    List<Question> questions = new ArrayList<>();
+    List<Participant> participants = new ArrayList<>();
+
+    public void addQuestion(Question q) {
+        questions.add(q);
+    }
+
+    public void addParticipant(Participant p) {
+        participants.add(p);
+    }
+
+    public void quizDetails() {
+        System.out.println("\nQuiz Title: " + quizTitle);
+        System.out.println("Quiz ID: " + quizId);
+        System.out.println("Number of Questions: " + questions.size());
+        System.out.println("Number of Participants: " + participants.size());
+    }
+}
+
+class TimedQuiz extends Quiz {
+    int duration;
+
+    public TimedQuiz(int duration) {
+        this.duration = duration;
+    }
+
+    public void startTimer() {
+        System.out.println("\nTimer started for " + duration + " seconds.");
+
+        Thread timerThread = new Thread(new Runnable() {
+            public void run() {
+                try {
+                    Thread.sleep(duration * 1000);
+                    System.out.println("\nTime's up! The quiz has ended.");
+                    System.exit(0);
+                } catch (InterruptedException e) {
+                    System.out.println("Timer interrupted.");
+                }
+            }
+        });
+
+        timerThread.start();
+
+        Scanner scanner = new Scanner(System.in);
+        for (Question q : questions) {
+            q.questionDetails();
+            System.out.print("Enter your answer: ");
+            String ans = scanner.nextLine();
+            if (q.checkAnswer(ans)) {
+                participants.get(0).score += 1;
+            }
+        }
+
+        System.out.println("\nQuiz Completed. Your Score: " + participants.get(0).score);
+        System.exit(0);
+    }
+}
+
+class PracticeQuiz extends Quiz {
+    public PracticeQuiz() {}
+
+    public void reviewAnswers() {
+        System.out.println("\nReviewing answers for practice quiz...");
+        for (Question q : questions) {
+            q.questionDetails();
+            System.out.println("Correct Answer: " + q.correctOption);
+        }
+    }
+}
